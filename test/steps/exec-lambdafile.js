@@ -224,3 +224,83 @@ describe("getResult", () => {
     });
 
 });
+
+describe("execLambdafile", () => {
+
+    const execLambdafile = execLambdafileModule.__GetDependency__("execLambdafile");
+    const Lambdafile = [
+        "FROM node",
+        "MAINTEINER Foo Bar <foo@example.com>",
+        "# Comment",
+        "RUN command",
+        "RUN another command",
+        "# Another comment",
+        "RUN a third command",
+        "RUN a fourth command containing the keyword RUN (and then some)",
+        "RUN a fifth command containing the keyword RUN"
+    ].join("\n");
+    const readFileSync = sinon.stub().returns(Lambdafile);
+    const execSync = sinon.stub().returns(new Buffer("stdout"));
+    const statSync = sinon.stub().returns(true);
+    const writeFileSync = sinon.spy();
+
+    before(() => {
+        execLambdafileModule.__Rewire__("readFileSync", readFileSync);
+        execLambdafileModule.__Rewire__("execSync", execSync);
+        execLambdafileModule.__Rewire__("statSync", statSync);
+        execLambdafileModule.__Rewire__("writeFileSync", writeFileSync);
+    });
+    after(() => {
+        execLambdafileModule.__ResetDependency__("readFileSync");
+        execLambdafileModule.__ResetDependency__("execSync");
+        execLambdafileModule.__ResetDependency__("statSync");
+        execLambdafileModule.__ResetDependency__("writeFileSync");
+    });
+    beforeEach(() => {
+        readFileSync.reset();
+        execSync.reset();
+        statSync.reset();
+        writeFileSync.reset();
+    });
+
+    it("reads the Lambdafile from the file system", () => {
+        execLambdafile();
+        expect(readFileSync).to.have.callCount(1);
+        expect(readFileSync).to.have.been.calledWith("Lambdafile", "utf8");
+    });
+
+    it("execs RUN commands", () => {
+        execLambdafile();
+        expect(execSync).to.have.callCount(5);
+        expect(execSync).to.have.been.calledWith("command");
+        expect(execSync).to.have.been.calledWith("another command");
+        expect(execSync).to.have.been.calledWith("a third command");
+        expect(execSync).to.have.been.calledWith("a fourth command containing the keyword RUN (and then some)");
+        expect(execSync).to.have.been.calledWith("a fifth command containing the keyword RUN");
+    });
+
+    it("writes the execution result to the file system", () => {
+        const expectedRunResults = [
+            "command",
+            "another command",
+            "a third command",
+            "a fourth command containing the keyword RUN (and then some)",
+            "a fifth command containing the keyword RUN"
+        ].map(command => ({
+            command: command,
+            status: 0,
+            stdout: "stdout"
+        }));
+        execLambdafile();
+        expect(writeFileSync).to.have.callCount(1);
+        expect(writeFileSync).to.have.been.calledWith("Lambdafile-exec-result.json");
+        const actual = JSON.parse(writeFileSync.getCall(0).args[1]);
+        expect(actual).to.deep.equal({
+            Lambdafile: Lambdafile,
+            status: 0,
+            error: null,
+            runResults: expectedRunResults
+        });
+    });
+
+});
