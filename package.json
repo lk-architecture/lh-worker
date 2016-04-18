@@ -1,7 +1,7 @@
 {
   "name": "lh-worker",
   "version": "1.0.0",
-  "description": "Build lambda functions and upload them to the lambda-hub",
+  "description": "Build lambda functions and upload them to the Lambda Hub",
   "main": "lib/lh-worker.js",
   "scripts": {
     "build": "babel src -d lib",
@@ -16,10 +16,10 @@
   "author": "Paolo Scanferla <paolo.scanferla@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lambda-hub/lh-worker.git"
+    "url": "https://github.com/lk-architecture/lh-worker.git"
   },
   "bugs": {
-    "url": "https://github.com/lambda-hub/lh-worker/issues"
+    "url": "https://github.com/lk-architecture/lh-worker/issues"
   },
   "license": "MIT",
   "devDependencies": {
